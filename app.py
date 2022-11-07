@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from utils.common_utils import dict_filter
-from utils.dataset_utils import refresh_masader_and_tags
+from utils.dataset_utils import refresh_adawat_and_tags
 from utils.gh_utils import create_issue
 
 
@@ -24,46 +24,46 @@ db = redis.from_url(app.config['REDIS_URL'])
 
 @app.route('/datasets/schema')
 def datasets_schema():
-    masader = json.loads(db.get('masader'))
+    adawat = json.loads(db.get('adawat'))
 
-    return jsonify(list(masader[0].keys()))
+    return jsonify(list(adawat[0].keys()))
 
 
 @app.route('/datasets')
 def get_datasets():
-    masader = json.loads(db.get('masader'))
+    adawat = json.loads(db.get('adawat'))
 
     page = request.args.get('page', default=1, type=int)
-    size = request.args.get('size', default=len(masader), type=int)
+    size = request.args.get('size', default=len(adawat), type=int)
     features = list(filter(None, request.args.get('features', default='', type=str).split(',')))
     query = request.args.get('query', default='', type=str)
 
-    masader_page = masader[(page - 1) * size : page * size]
+    adawat_page = adawat[(page - 1) * size : page * size]
 
-    if not masader_page:
+    if not adawat_page:
         return jsonify('Page not found.'), 404
 
-    masader_page = pd.DataFrame(masader_page)
+    adawat_page = pd.DataFrame(adawat_page)
 
     if query:
-        masader_page = masader_page.query(query)
+        adawat_page = adawat_page.query(query)
 
     if features:
-        masader_page = masader_page[features]
+        adawat_page = adawat_page[features]
 
-    return jsonify(masader_page.to_dict('records'))
+    return jsonify(adawat_page.to_dict('records'))
 
 
 @app.route('/datasets/<int:index>')
 def get_dataset(index: int):
-    masader = json.loads(db.get('masader'))
+    adawat = json.loads(db.get('adawat'))
 
     features = list(filter(None, request.args.get('features', default='', type=str).split(',')))
 
-    if not (1 <= index <= len(masader)):
-        return jsonify(f'Dataset index is out of range, the index should be between 1 and {len(masader)}.'), 404
+    if not (1 <= index <= len(adawat)):
+        return jsonify(f'Dataset index is out of range, the index should be between 1 and {len(adawat)}.'), 404
 
-    return jsonify(dict_filter(masader[index - 1], features))
+    return jsonify(dict_filter(adawat[index - 1], features))
 
 
 @app.route('/datasets/tags')
@@ -77,20 +77,20 @@ def get_tags():
 
 @app.route('/datasets/<int:index>/issues', methods=['POST'])
 def create_dataset_issue(index: int):
-    masader = json.loads(db.get('masader'))
+    adawat = json.loads(db.get('adawat'))
 
-    if not (1 <= index <= len(masader)):
-        return jsonify(f'Dataset index is out of range, the index should be between 1 and {len(masader)}.'), 404
+    if not (1 <= index <= len(adawat)):
+        return jsonify(f'Dataset index is out of range, the index should be between 1 and {len(adawat)}.'), 404
 
     title = request.get_json().get('title', '')
     body = request.get_json().get('body', '')
 
-    return jsonify({'issue_url': create_issue(f"{masader[index]['Name']}: {title}", body)})
+    return jsonify({'issue_url': create_issue(f"{adawat[index]['Name']}: {title}", body)})
 
 
 @app.route('/highlights')
 def get_highlights():
-    return jsonify({'highlights': os.environ.get('HIGHLIGHTS', '')})
+    return jsonify({'highlights': "adawat is cool   "})
 
 
 @app.route('/refresh/<string:password>')
@@ -100,7 +100,7 @@ def refresh(password: str):
     if password != app.config['REFRESH_PASSWORD']:
         return jsonify('Password is incorrect.'), 403
 
-    Process(name='refresh_globals', target=refresh_masader_and_tags, args=(db,)).start()
+    Process(name='refresh_globals', target=refresh_adawat_and_tags, args=(db,)).start()
 
     return jsonify('Datasets refresh process initiated successfully!')
 

@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import numpy as np
 
-def get_masader_clusters(embeddings: List[List[float]]) -> Tuple[List[int], List[List[float]]]:
+def get_adawat_clusters(embeddings: List[List[float]]) -> Tuple[List[int], List[List[float]]]:
     reduced_embeddings = compute_reduced_embeddings(embeddings)
 
     return compute_clusters(reduced_embeddings), reduced_embeddings

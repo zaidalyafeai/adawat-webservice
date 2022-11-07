@@ -10,8 +10,8 @@ from constants import HF_EMBEDDINGS_MODEL, HF_FEATURE_EXTRACTION_TASK, HF_REQUES
 from utils.hf_utils import request_hf_model
 
 
-def get_masader_embeddings(masader: List[Dict[str, Union[str, int]]], db: Redis) -> List[List[float]]:
-    cached_embedding, new_prompts = get_cached_embeddings_and_new_prompts(masader, db)
+def get_adawat_embeddings(adawat: List[Dict[str, Union[str, int]]], db: Redis) -> List[List[float]]:
+    cached_embedding, new_prompts = get_cached_embeddings_and_new_prompts(adawat, db)
     new_prompts_embeddings = compute_embeddings(list(new_prompts.values()), HF_EMBEDDINGS_MODEL)
 
     for (index, new_prompt), new_prompt_embeddings in zip(new_prompts.items(), new_prompts_embeddings):
@@ -22,19 +22,19 @@ def get_masader_embeddings(masader: List[Dict[str, Union[str, int]]], db: Redis)
 
 
 def get_cached_embeddings_and_new_prompts(
-    masader: List[Dict[str, Union[str, int]]],
+    adawat: List[Dict[str, Union[str, int]]],
     db: Redis,
 ) -> Tuple[Dict[int, List[float]], Dict[int, str]]:
     cached_embeddings = dict()
     new_prompts = dict()
 
-    masader_prompts = list(map(build_dataset_prompt, masader))
-    masader_cached_embeddings = db.mget(masader_prompts)
+    adawat_prompts = list(map(build_dataset_prompt, adawat))
+    adawat_cached_embeddings = db.mget(adawat_prompts)
 
     for index, (dataset_prompt, dataset_cached_embeddings) in enumerate(
         zip(
-            masader_prompts,
-            masader_cached_embeddings,
+            adawat_prompts,
+            adawat_cached_embeddings,
         ),
     ):
         if dataset_cached_embeddings:
@@ -62,4 +62,4 @@ def compute_embeddings(texts: List[str], model_name: str) -> List[List[float]]:
 
 
 def build_dataset_prompt(dataset: Dict[str, Union[str, int]]) -> str:
-    return f"{dataset['Name']} {dataset['Description']} {dataset['Tasks']} {dataset['Abstract']}"
+    return f"{dataset['Name']} {dataset['Description']} {dataset['Tasks']}"

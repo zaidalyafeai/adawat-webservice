@@ -8,26 +8,26 @@ from datasets import Dataset, DownloadMode, load_dataset
 from constants import SUBSETS_FEATURES
 
 from utils.common_utils import identity, multi_map
-from utils.embeddings_utils import get_masader_embeddings
-from utils.clusters_utils import get_masader_clusters
+from utils.embeddings_utils import get_adawat_embeddings
+from utils.clusters_utils import get_adawat_clusters
 
 
-def refresh_masader_and_tags(db: Redis) -> None:
-    masader = load_dataset(
-        'arbml/masader',
+def refresh_adawat_and_tags(db: Redis) -> None:
+    adawat = load_dataset(
+        'arbml/adawat',
         download_mode=DownloadMode.FORCE_REDOWNLOAD,
         ignore_verifications=True,
     )['train']
 
-    tags = get_features_tags(masader)
-    masader = list(masader)
+    tags = get_features_tags(adawat)
+    adawat = list(adawat)
 
-    embeddings = get_masader_embeddings(masader, db)
-    clusters, reduced_embeddings = get_masader_clusters(embeddings)
+    embeddings = get_adawat_embeddings(adawat, db)
+    clusters, reduced_embeddings = get_adawat_clusters(embeddings)
 
     for index, (dataset, dataset_cluster, dataset_reduced_embeddings) in enumerate(
         zip(
-            masader,
+            adawat,
             clusters,
             reduced_embeddings,
         )
@@ -36,24 +36,18 @@ def refresh_masader_and_tags(db: Redis) -> None:
         dataset['Cluster'] = dataset_cluster
         dataset['Embeddings'] = dataset_reduced_embeddings
 
-    db.set('masader', json.dumps(masader))
+    db.set('adawat', json.dumps(adawat))
     db.set('tags', json.dumps(tags))
 
 
-def get_features_tags(masader: Dataset) -> Dict[str, List[Union[str, int]]]:
+def get_features_tags(adawat: Dataset) -> Dict[str, List[Union[str, int]]]:
     tags: Dict[str, Union[Set[str], List[Union[str, int]]]] = dict()
 
-    for feature in masader.features:
-        if feature == 'Subsets':
-            tags = process_subsets_feature(tags, masader['Subsets'])
-        elif feature == 'Dialect':
-            tags = process_dialect_feature(tags, masader['Dialect'])
-        elif feature == 'Tasks':
-            tags = process_tasks_feature(tags, masader['Tasks'])
+    for feature in adawat.features:
+        if feature == 'Tasks':
+            tags = process_tasks_feature(tags, adawat['Tasks'])
         else:
-            tags[feature] = sorted(set(masader[feature]))
-
-    tags['Dialect'] = sorted(set(tags['Dialect'] + tags['Subsets:Dialect']))
+            tags[feature] = sorted(set(adawat[feature]))
 
     for feature in tags:
         try:
@@ -71,38 +65,6 @@ def extract_country_from_dialect_feature(dialect_feature: str) -> str:
         return 'MSA'
 
     return country
-
-
-def process_subsets_feature(
-    tags: Dict[str, Union[Set[str], List[Union[str, int]]]],
-    subsets_feature: Dict[str, str],
-) -> Dict[str, Union[Set[str], List[Union[str, int]]]]:
-    for element in SUBSETS_FEATURES:
-        tags[f'Subsets:{element}'] = set()
-
-    for subsets in subsets_feature:
-        for subset in subsets:
-            for element in SUBSETS_FEATURES:
-                try:
-                    if element == 'Dialect':
-                        tags[f'Subsets:{element}'].update(
-                            list(
-                                map(
-                                    extract_country_from_dialect_feature,
-                                    subset[element].split(','),
-                                ),
-                            ),
-                        )
-                    else:
-                        tags[f'Subsets:{element}'].add(subset[element])
-                except KeyError:
-                    pass
-
-    for element in SUBSETS_FEATURES:
-        tags[f'Subsets:{element}'] = sorted(tags[f'Subsets:{element}'])
-
-    return tags
-
 
 def process_dialect_feature(
     tags: Dict[str, Union[Set[str], List[Union[str, int]]]],
